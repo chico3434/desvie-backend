@@ -59,12 +59,21 @@ class UsuarioController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param Usuario $usuario
+     * @param int $id
      * @return JsonResponse
      */
-    public function show(Usuario $usuario) : JsonResponse
+    public function show(int $id) : JsonResponse
     {
-        return resourceResponse(UsuarioResource::make($usuario));
+        try {
+            $usuario = Usuario::find($id);
+            if($usuario !== null) {
+                return resourceResponse(UsuarioResource::make($usuario));
+            } else {
+                return errorResponse('Usuário não encontrado.', 404);
+            }
+        } catch (Exception $exception) {
+            return errorResponse($exception->getMessage());
+        }
     }
 
     /**
@@ -76,7 +85,28 @@ class UsuarioController extends Controller
      */
     public function update(Request $request, Usuario $usuario) : JsonResponse
     {
-        //
+        try {
+            $fields = $request->only(['username', 'password']);
+
+            $rules = [
+                'username' => 'min:6|max:32|unique:usuarios',
+                'password' => 'min:6',
+            ];
+
+            $validator = Validator::make($fields, $rules);
+
+            if($validator->fails()) {
+                throw new Exception($validator->errors());
+            }
+
+            if($usuario->update($fields)) {
+                return resourceResponse(UsuarioResource::make($usuario));
+            } else {
+                throw new Exception('Não foi possível atualizar o usuário.');
+            }
+        } catch (Exception $exception) {
+            return errorResponse($exception->getMessage());
+        }
     }
 
     /**
@@ -87,6 +117,14 @@ class UsuarioController extends Controller
      */
     public function destroy(Usuario $usuario) : JsonResponse
     {
-        //
+        try {
+            if($usuario->delete()) {
+                return resourceResponse(UsuarioResource::make($usuario));
+            } else {
+                throw new Exception('Não foi possível excluir o usuário.');
+            }
+        } catch (Exception $exception) {
+            return errorResponse($exception->getMessage());
+        }
     }
 }
