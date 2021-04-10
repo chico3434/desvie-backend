@@ -43,6 +43,9 @@ class UsuarioController extends Controller
                 throw new Exception($validator->errors());
             }
 
+            $hash = password_hash($fields['password'], PASSWORD_BCRYPT);
+            $fields['password'] = $hash;
+
             $usuario = Usuario::create($fields);
 
             if($usuario !== null) {
