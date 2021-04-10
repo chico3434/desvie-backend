@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\UsuarioResource;
 use App\Models\Usuario;
+use DateTime;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,41 @@ class UsuarioController extends Controller
     public function index() : JsonResponse
     {
 
+    }
+
+    public function login(Request $request) : JsonResponse
+    {
+        try {
+            $fields = $request->only(['username', 'password']);
+
+            $usuario = Usuario::whereUsername($fields['username'])->first();
+            if($usuario !== null) {
+                if(password_verify($fields['password'], $usuario->password)) {
+                    $date = new DateTime();
+                    $token = bcrypt($date->format('Y-m-d H:i:sP'));
+                    $usuario->token = $token;
+                    $usuario->update();
+
+                    $response = [
+                        'data' => [
+                            'id' => $usuario->id,
+                            'username' => $usuario->username,
+                            'token' => $usuario->token,
+                            'created_at' => $usuario->created_at,
+                            'updated_at' => $usuario->updated_at
+                        ],
+                    ];
+
+                    return response()->json($response);
+                } else {
+                    throw new Exception('Senha incorreta.');
+                }
+            } else {
+                throw new Exception('Não há nenhum usuário cadastrado com este username.');
+            }
+        } catch (Exception $exception) {
+            return errorResponse($exception->getMessage());
+        }
     }
 
     /**
